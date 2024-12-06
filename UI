@@ -1,0 +1,141 @@
+import sys
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout,
+    QLineEdit, QPushButton, QLabel, QGridLayout, QScrollArea, QFrame
+)
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import Qt
+
+
+class BookListApp(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("BookList")
+        self.setGeometry(100, 100, 1000, 700)
+        self.setup_ui()
+
+    def setup_ui(self):
+        # Main layout with tabs
+        self.tabs = QTabWidget()
+        self.setCentralWidget(self.tabs)
+
+        # Adding tabs
+        self.book_search_tab = QWidget()
+        self.book_details_tab = QWidget()
+        self.recommendations_tab = QWidget()
+
+        self.tabs.addTab(self.book_search_tab, "Book Search")
+        self.tabs.addTab(self.book_details_tab, "Book Details")
+        self.tabs.addTab(self.recommendations_tab, "Recommendations")
+
+        # Setting up each tab
+        self.setup_book_search_tab()
+        self.setup_book_details_tab()
+        self.setup_recommendations_tab()
+
+    def setup_book_search_tab(self):
+        layout = QVBoxLayout()
+
+        # Header with search bar
+        header_layout = QHBoxLayout()
+        self.search_bar = QLineEdit()
+        self.search_bar.setPlaceholderText("Search books by title...")
+        search_button = QPushButton("🔍")
+        search_button.clicked.connect(self.perform_search)
+        header_layout.addWidget(self.search_bar)
+        header_layout.addWidget(search_button)
+        layout.addLayout(header_layout)
+
+        # Scroll area for displaying books
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.book_container = QWidget()
+        self.grid_layout = QGridLayout()
+        self.grid_layout.setSpacing(20)
+        self.book_container.setLayout(self.grid_layout)
+        self.scroll_area.setWidget(self.book_container)
+        layout.addWidget(self.scroll_area)
+
+        self.book_search_tab.setLayout(layout)
+
+    def setup_book_details_tab(self):
+        layout = QVBoxLayout()
+        self.details_label = QLabel("Select a book to view details.")
+        layout.addWidget(self.details_label)
+        self.book_details_tab.setLayout(layout)
+
+    def setup_recommendations_tab(self):
+        layout = QVBoxLayout()
+        self.recommendations_label = QLabel("Recommended books will appear here.")
+        layout.addWidget(self.recommendations_label)
+
+        back_button = QPushButton("Back to Search")
+        back_button.clicked.connect(lambda: self.tabs.setCurrentWidget(self.book_search_tab))
+        layout.addWidget(back_button)
+        self.recommendations_tab.setLayout(layout)
+
+    def get_books(self):
+        # Example books
+        return [
+            {"title": "Book One", "genre": "Fiction", "cover_path": "book1.jpg"},
+            {"title": "Book Two", "genre": "Non-Fiction", "cover_path": "book2.jpg"},
+            {"title": "Sci-Fi World", "genre": "Sci-Fi", "cover_path": "book3.jpg"},
+            {"title": "Biography of X", "genre": "Biography", "cover_path": "book4.jpg"},
+        ]
+
+    def create_book_card(self, title, genre, cover_path):
+        card = QFrame()
+        card_layout = QVBoxLayout()
+
+        # Book cover
+        cover_label = QLabel()
+        pixmap = QPixmap(cover_path).scaled(150, 200, Qt.KeepAspectRatio)
+        cover_label.setPixmap(pixmap)
+        cover_label.setAlignment(Qt.AlignCenter)
+        card_layout.addWidget(cover_label)
+
+        # Title
+        title_label = QLabel(title)
+        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setStyleSheet("font-weight: bold;")
+        card_layout.addWidget(title_label)
+
+        # Type of book it is that is being seen
+        genre_label = QLabel(f"Genre: {genre}")
+        genre_label.setAlignment(Qt.AlignCenter)
+        card_layout.addWidget(genre_label)
+
+        # Buttons to view details
+        details_button = QPushButton("View Details")
+        details_button.clicked.connect(lambda: self.show_book_details(title, genre, cover_path))
+        card_layout.addWidget(details_button)
+
+        card.setLayout(card_layout)
+        return card
+
+    def perform_search(self):
+        search_text = self.search_bar.text().strip().lower()
+        books = self.get_books()
+
+        for i in reversed(range(self.grid_layout.count())):
+            widget = self.grid_layout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+
+        for book in books:
+            if search_text in book["title"].lower():
+                book_card = self.create_book_card(book["title"], book["genre"], book["cover_path"])
+                row = self.grid_layout.rowCount()
+                col = self.grid_layout.count() % 4
+                self.grid_layout.addWidget(book_card, row, col)
+
+    def show_book_details(self, title, genre, cover_path):
+        self.details_label.setText(f"Title: {title}\nGenre: {genre}")
+        self.tabs.setCurrentWidget(self.book_details_tab)
+
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = BookListApp()
+    window.show()
+    sys.exit(app.exec_())
